@@ -16,8 +16,13 @@ You should keep 2 editors open (one for coding, and one for testing).  If anythi
 breaks you should be able to fix it and re-save. If you break api.php, run panic.php once.
 
 Giving credit where it's due:
+
 http://php.net/
+
 http://ace.c9.io/
+
 https://angularjs.org/
+
 http://getbootstrap.com/
+
 http://jquery.com/
