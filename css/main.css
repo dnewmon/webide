@@ -1,0 +1,27 @@
+
+a {
+    cursor: pointer;
+}
+
+#editor {
+    position: absolute;
+    left: 0;
+    top: 0;
+    right: 0;
+    bottom: 0;
+}
+
+#terminalDialog pre,
+.action-list { 
+    height: 500px;
+    overflow-x: hidden;
+    overflow-y: auto;
+}
+
+.modal-dialog {
+    width: 900px;
+}
+
+#promptDialog .modal-dialog {
+    width: 400px;
+}

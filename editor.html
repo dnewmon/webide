@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html ng-app="editorApp">
+<head>
+    <title>Editor</title>
+    <meta name="viewport" content="width=1200px" />
+</head>
+<body ng-controller="PageController" ng-keydown="onKeyDown($event)">
+    
+    <div class="container" ng-show="showLogin">
+        <form ng-submit="authorize()">
+            <h2>Login</h2>
+
+            <label>Username</label>
+            <input type="text" ng-model="uname" />
+            <br /><br />
+            <label>Password</label>
+            <input type="password" ng-model="pass" />
+            
+            <button type="submit">Login</button>
+        </form>
+    </div>
+    
+    <div ng-show="!showLogin">
+        <p class="text-danger"></p>
+        <div id="editor"></div>
+        
+        <div class="modal" id="actionDialog" tabindex="-1" role="dialog" aria-hidden="true">
+          <div class="modal-dialog">
+            <div class="modal-content">
+              <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                <h4 class="modal-title">Actions</h4>
+              </div>
+              <div class="modal-body">
+                <div class="action-list">
+                    <div class="list-group">
+                        <a class="list-group-item" ng-repeat="action in (filteredActions = (actions | filter: actionSearch))" data-dismiss="modal" ng-click="executeAction(action)" ng-class="{ active: $first }">{{ action.text }}</a>
+                    </div>
+                </div>
+              </div>
+              <div class="modal-footer">
+                  <form ng-submit="executeFirstAction($event)">
+                    <input type="text" class="form-control" placeholder="Search" ng-model="actionSearch" />
+                  </form>
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="modal" id="terminalDialog" tabindex="-1" role="dialog" aria-hidden="true" ng-controller="TerminalController">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                        <h4 class="modal-title">Terminal</h4>
+                    </div>
+                    <div class="modal-body">
+                        <pre dn-scroll-bottom="terminalOutput">{{ terminalOutput }}</pre>
+                    </div>
+                    <div class="modal-footer">
+                        <form ng-submit="executeTerminalCommand($event)">
+                            <input type="text" class="form-control" placeholder="Enter Command" ng-keydown="onKeyDown($event)" ng-model="terminalCommand" />
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal" id="promptDialog" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                        <h4 class="modal-title">{{ promptTitle }}</h4>
+                    </div>
+                    <div class="modal-body">
+                        {{ promptMessage }}
+                    </div>
+                    <div class="modal-footer">
+                        <form ng-submit="submitPrompt($event)">
+                            <input type="text" class="form-control" dn-place-holder-auto-complete="promptAutoComplete" placeholder="{{ promptPlaceholder }}" ng-model="promptValue" />
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+    </div>
+    
+    <link rel="stylesheet" href="css/bootstrap.min.css" type="text/css" />
+    <link rel="stylesheet" href="css/main.css" type="text/css" />
+    
+    <script src="js/jquery-2.1.1.min.js"></script>
+    <script src="js/bootstrap.min.js"></script>
+    <script src="js/ace/ace.js"></script>
+    <script src="js/angular.min.js"></script>
+    <script src="js/underscore.min.js"></script>
+    <script src="api.php"></script>
+    <script>var editorApp = angular.module('editorApp', []);</script>
+    <script src="js/PageController.js"></script>
+</body>
+</html>
