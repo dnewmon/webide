@@ -2,29 +2,21 @@
 
 session_start();
 
-$input = json_decode(file_get_contents('php://input'), true);
+$input = null;
 
-$PROJECT_PATH = "/var/www/projects/";
+if (isset($_POST['action'])) {
+    $input = $_POST;
+}
+else {
+    $input = json_decode(file_get_contents('php://input'), true);
+}
+
+$PROJECT_PATH = "/var/www/html/";
 
 $WHITELISTED_PATHS = array(
     dirname(__FILE__),
     $PROJECT_PATH,
 );
-
-class BackgroundThread {
-    private $path;
-    private $command;
-    
-    public function __construct($path, $command) {
-        $this->path = $path;
-        $this->command = $command;
-    }
-    
-    public function start() {
-        chdir($this->path);
-        system('/bin/bash -c "' . $this->command . '"');
-    }
-}
 
 class ApiMethods {
     public function logout() {
@@ -52,6 +44,17 @@ class ApiMethods {
         file_put_contents($input["path"], $input["content"]);
     }
     
+    public function uploadFile() {
+        global $input;
+        
+        if (file_exists($input["path"])) {
+            copy($input["path"], $input["path"] . ".bak");
+        }
+        
+        move_uploaded_file($_FILES['content']['tmp_name'], $input["path"]);
+        echo "File Uploaded To: " . $input["path"];
+    }
+    
     public function renameFile() {
         global $input;
         
@@ -68,15 +71,18 @@ class ApiMethods {
     public function executeBackgroundTerminalCommand() {
         global $input;
         
-        $thread = new BackgroundThread($input["path"], $input["command"]);
-        $thread->start();
-        echo 'true';
+        chdir($input["path"]);
+        system($input["command"]);
     }
     
     public function combinePath() {
         global $input;
         
         echo realpath($input["path1"] . $input["path2"]);
+    }
+    
+    public function ping() {
+        echo 'true';
     }
     
     public function deleteFile() {
@@ -90,7 +96,7 @@ class ApiMethods {
         }
     }
     
-    private function listFilesInternal(&$items, $path, $basePathLength) {
+    private function listFilesInternal(&$items, $path, $basePathLength, $depth) {
         if ($dir = opendir($path)) {
             while (($curFile = readdir($dir)) !== false) {
                 $baseName = $curFile;
@@ -98,11 +104,9 @@ class ApiMethods {
                 
                 if (strcmp($baseName, ".") != 0 && strcmp($baseName, "..") != 0) {
                     if (is_file($curFile) && substr($baseName, 0, 1) !== ".") {
-                        if (strpos($curFile, ".bak") === false) {
-                            $items[] = substr($curFile, $basePathLength);
-                        }
-                    } else if (is_dir($curFile)) {
-                        $this->listFilesInternal($items, $curFile . '/', $basePathLength);
+                        $items[] = substr($curFile, $basePathLength);
+                    } else if (is_dir($curFile) && strcmp(substr($baseName, 0, 1), ".") != 0) {
+                        $this->listFilesInternal($items, $curFile . '/', $basePathLength, $depth + 1);
                     }
                 }
             }
@@ -115,8 +119,8 @@ class ApiMethods {
         global $input;
         
         $items = array();
-        $this->listFilesInternal($items, $input["path"], strlen($input["path"]));
-        sort($items, SORT_STRING|SORT_FLAG_CASE);
+        $this->listFilesInternal($items, $input["path"], strlen($input["path"]), 0);
+        sort($items, SORT_STRING); // |SORT_FLAG_CASE);
         echo json_encode($items);
     }
     
@@ -132,7 +136,17 @@ class ApiMethods {
                 $baseName = substr($folder, $basePathLength);
                 
                 if (is_dir($PROJECT_PATH . $folder) && $folder !== "." && $folder !== ".." && $baseName !== ".git") {
-                    $items[] = $PROJECT_PATH . $folder . '/';
+                    $projectFolder = $PROJECT_PATH . $folder;
+                    
+                    if (is_file($projectFolder . '.txt')) {
+                        $folders = explode(';', file_get_contents($projectFolder . '.txt'));
+                        for ($i = 0; $i < count($folders); $i++) {
+                            $items[] = $projectFolder . '/' . $folders[$i] . '/';
+                        }
+                    }
+                    else {
+                        $items[] = $projectFolder . '/';
+                    }
                 }
             }
             

@@ -1,12 +1,18 @@
 editorApp.controller('PageController', function ($scope, $http, ActionsProvider, SharedPathService) {
     var api = new Api($http);
     
+    setInterval(function () {
+        api.ping();
+    }, 20 * 1000);
+    
     $('.dropdown-toggle').dropdown();
     
     $scope.currentFile = '';
     $scope.dirtyFlag = false;
     $scope.showLogin = true;
     $scope.files = [];
+    $scope.allFiles = [];
+    $scope.allFolders = [];
     $scope.actions = [];
     $scope.terminalOutput = '';
     
@@ -17,14 +23,15 @@ editorApp.controller('PageController', function ($scope, $http, ActionsProvider,
     $scope.promptAutoComplete = '';
     
     $scope.editor = ace.edit("editor");
-    $scope.editor.setTheme("ace/theme/vibrant_ink");
+    $scope.editor.setTheme("ace/theme/xcode");
     $scope.editor.setShowPrintMargin(false);
     $scope.editor.setShowInvisibles(true);
     $scope.editor.getSession().setUseSoftTabs(true);
     $scope.editor.getSession().setTabSize(4);
     
     $scope.editor.getSession().on('change', function () {
-    	document.title = $scope.currentFile + '*';
+        var name = $scope.currentFile.substr($scope.currentFile.lastIndexOf('/') + 1);
+    	document.title = name + '*';
     	$scope.dirtyFlag = true;
     });
     
@@ -36,6 +43,10 @@ editorApp.controller('PageController', function ($scope, $http, ActionsProvider,
     
     ActionsProvider.addProvider(function () { }, 'file', function (action) {
         $scope.loadFile(action.path);
+    });
+    
+    ActionsProvider.addProvider(function () { }, 'folder', function (action) {
+        SharedPathService.setCurrentPath(SharedPathService.getCurrentPath() + action.path + "/");
     });
     
     ActionsProvider.addProvider(function () { }, 'import', function (action) {
@@ -55,9 +66,13 @@ editorApp.controller('PageController', function ($scope, $http, ActionsProvider,
         actions.push({ text: 'Create File', type: 'function', reference: $scope.createFile });
         actions.push({ text: 'Delete File', type: 'function', reference: $scope.deleteFile });
         actions.push({ text: 'Execute Expression', type: 'function', reference: $scope.executeExpression });
+        actions.push({ text: 'Execute JavaScript', type: 'function', reference: $scope.executeJavaScript });
         actions.push({ text: 'Change Folder', type: 'function', reference: $scope.changeFolder });
         actions.push({ text: 'Command Line / Terminal', type: 'function', reference: $scope.showTerminal });
         actions.push({ text: 'Reload Actions / File List', type: 'function', reference: $scope.listFiles });
+        actions.push({ text: 'Convert to Soft-Tabs', type: 'function', reference: $scope.transformTabs });
+        actions.push({ text: 'Delete Backup Files', type: 'function', reference: $scope.deleteBackupFiles });
+        actions.push({ text: 'Upload File', type: 'function', reference: $scope.showUploadDialog });
         actions.push({ text: 'Logout', type: 'function', reference: $scope.logout });
     }, 'function', function (action) {
         action.reference();
@@ -99,7 +114,11 @@ editorApp.controller('PageController', function ($scope, $http, ActionsProvider,
             "http://underscorejs.org/",
             "https://angularjs.org/",
             "http://getbootstrap.com/",
-            "http://api.jquery.com/"
+            "http://api.jquery.com/",
+            "http://devdocs.io/",
+            "http://regexpal.com/",
+            "http://wicky.nillia.ms/enquire.js/",
+            "https://github.com/ajaxorg/ace/wiki/Default-Keyboard-Shortcuts"
         ];
         
         for (i = 0; i < bookmarks.length; i++) {
@@ -112,6 +131,15 @@ editorApp.controller('PageController', function ($scope, $http, ActionsProvider,
     }, 'link', function (action) {
         window.open(action.url, "_blank", "width=1024,height=600,menubar=no,toolbar=no");
     });
+    
+    $scope.showUploadDialog = function() {
+        $scope.uploadPath = SharedPathService.getCurrentPath();
+        $('#uploadDialog').modal('show');
+        
+        setTimeout(function () {
+            $('#uploadDialog input')[0].focus();
+        }, 200);
+    };
     
     // Ctrl+S Handler
     $scope.onKeyDown = function (e) {
@@ -147,11 +175,22 @@ editorApp.controller('PageController', function ($scope, $http, ActionsProvider,
             'path': SharedPathService.getCurrentPath() + $scope.currentFile,
             'content': $scope.editor.getSession().getValue()
         }).then(function (response) {
-            document.title = $scope.currentFile;
+            var name = $scope.currentFile.substr($scope.currentFile.lastIndexOf('/') + 1);
+        	document.title = name;
             $scope.editor.setReadOnly(false);
             $scope.editor.focus();
             $scope.dirtyFlag = false;
         });
+    };
+    
+    $scope.executeJavaScript = function () {
+        eval($scope.editor.getSession().getValue());
+    };
+    
+    $scope.transformTabs = function() {
+        var content = $scope.editor.getValue();
+        content = content.replace(/\t/g, '    ');
+        $scope.editor.setValue(content, -1);
     };
     
     $scope.loadFile = function (path) {
@@ -188,7 +227,8 @@ editorApp.controller('PageController', function ($scope, $http, ActionsProvider,
                     $scope.editor.getSession().setMode('ace/mode/text');
                 }
                 
-                document.title = path;
+                var name = $scope.currentFile.substr($scope.currentFile.lastIndexOf('/') + 1);
+            	document.title = name;
                 $scope.editor.getSession().getUndoManager().reset();
                 $scope.editor.setReadOnly(false);
                 $scope.editor.focus();
@@ -252,15 +292,63 @@ editorApp.controller('PageController', function ($scope, $http, ActionsProvider,
         $('#actionDialog').modal('hide');
     };
     
+    $scope.deleteBackupFiles = function () {
+        if (confirm('Are you sure?')) {
+            _.each(_.filter($scope.allFiles, function (file) { return file.indexOf(".bak") !== -1; }), 
+                function (backupFile) {
+                
+                api.deleteFile({
+                    'path': SharedPathService.getCurrentPath() + backupFile
+                }).then(function (response) {
+                    $scope.listFiles().then(function () {
+                        $scope.loadFile($scope.files[0]);
+                    });
+                });
+            });
+        }
+    };
+    
     $scope.listFiles = function () {
         return api.listFiles({ 
             'path': SharedPathService.getCurrentPath()
         }).then(function (response) {
-            $scope.files = response.data;
+            var binaryFileFormats = [
+                'bak',
+                'png', 'jpg', 'jpeg',
+                'eot', 'woff', 'ttf', 'svg',
+                'class', 'tar', 'jar', 'war'
+            ];
+            
+            $scope.allFiles = response.data;
+            
+            $scope.allFolders = _.keys(_.groupBy($scope.allFiles, function (path) {
+                var folder = path.lastIndexOf('/');
+                return path.substr(0, folder);
+            }));
+            
+            console.log($scope.allFolders);
+            
+            $scope.files = _.filter($scope.allFiles, function (file) {
+                var extIndex = file.lastIndexOf('.');
+                if (extIndex !== -1) {
+                    var ext = file.substr(extIndex + 1);
+                    return binaryFileFormats.indexOf(ext) === -1;
+                }
+            });
             
             $scope.reloadActions();
             
-            for (var i = 0; i < $scope.files.length; i++) {
+            var i;
+            
+            for (i = 0; i < $scope.allFolders.length; i++) {
+                $scope.actions.push({
+                    text: 'Change to Folder ' + $scope.allFolders[i],
+                    type: 'folder',
+                    path: $scope.allFolders[i]
+                });
+            }
+            
+            for (i = 0; i < $scope.files.length; i++) {
                 $scope.actions.push({
                     text: 'Open ' + $scope.files[i],
                     type: 'file',
@@ -312,6 +400,7 @@ editorApp.controller('PageController', function ($scope, $http, ActionsProvider,
     };
     
     $scope.executeTerminalCommand = function () {
+        $scope.terminalOutput += $scope.terminalCommand + '\n';
         api.executeTerminalCommand({
             'path': SharedPathService.getCurrentPath(),
             'command': $scope.terminalCommand
@@ -341,6 +430,20 @@ editorApp.controller('PageController', function ($scope, $http, ActionsProvider,
                 $scope.showLogin = false;
             }
         });
+    };
+    
+    $scope.isActionMatch = function (actual, expected) {
+        actual = actual.toLowerCase();
+        expected = expected.toLowerCase();
+        
+        var terms = expected.split(" ");
+        for (var i = 0; i < terms.length; i++) {
+            if (actual.indexOf(terms[i]) === -1) {
+                return false;
+            }
+        }
+        
+        return true;
     };
     
     $scope.logout = function () {
@@ -464,6 +567,7 @@ editorApp.controller('PageController', function ($scope, $http, ActionsProvider,
         }
         
         $scope.commandIndex = -1;
+        $scope.terminalOutput += $scope.terminalCommand + '\n';
         
         if ($scope.terminalCommand.substr(0, 3) == 'cd ') {
             api.combinePath({

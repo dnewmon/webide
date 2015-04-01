@@ -34,7 +34,7 @@
               <div class="modal-body">
                 <div class="action-list">
                     <div class="list-group">
-                        <a class="list-group-item" ng-repeat="action in (filteredActions = (actions | filter: actionSearch))" data-dismiss="modal" ng-click="executeAction(action)" ng-class="{ active: $first }">{{ action.text }}</a>
+                        <a class="list-group-item" ng-repeat="action in (filteredActions = (actions | filter: actionSearch:isActionMatch | limitTo: 20 ))" data-dismiss="modal" ng-click="executeAction(action)" ng-class="{ active: $first }">{{ action.text }}</a>
                     </div>
                 </div>
               </div>
@@ -80,6 +80,31 @@
                         <form ng-submit="submitPrompt($event)">
                             <input type="text" class="form-control" dn-place-holder-auto-complete="promptAutoComplete" placeholder="{{ promptPlaceholder }}" ng-model="promptValue" />
                         </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="modal" id="uploadDialog" tabindex="-1" role="dialog" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+                        <h4 class="modal-title">File Uploader</h4>
+                    </div>
+                    <div class="modal-body">
+                        <form target="_blank" method="POST" action="api.php" enctype="multipart/form-data">
+                            <input type="hidden" name="action" value="uploadFile" />
+                            
+                            <input type="text" name="path" class="form-control" placeholder="File Path" ng-model="uploadPath" />
+                            <br />
+                            <input type="file" name="content" class="form-control" />
+                            <br /><br />
+                            
+                            <input type="button" class="btn btn-primary" value="Upload" onclick="this.form.submit()" />
+                        </form>
+                    </div>
+                    <div class="modal-footer">
                     </div>
                 </div>
             </div>
