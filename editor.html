@@ -34,13 +34,13 @@
               <div class="modal-body">
                 <div class="action-list">
                     <div class="list-group">
-                        <a class="list-group-item" ng-repeat="action in (filteredActions = (actions | filter: actionSearch:isActionMatch | limitTo: 20 ))" data-dismiss="modal" ng-click="executeAction(action)" ng-class="{ active: $first }">{{ action.text }}</a>
+                        <a class="list-group-item" ng-repeat="action in (filteredActions = (actions | filter: actionSearch:isActionMatch | limitTo: 20 ))" data-dismiss="modal" ng-click="executeAction(action)" ng-class="{ active: action.active }">{{ action.text }}</a>
                     </div>
                 </div>
               </div>
               <div class="modal-footer">
-                  <form ng-submit="executeFirstAction($event)">
-                    <input type="text" class="form-control" placeholder="Search" ng-model="actionSearch" />
+                  <form ng-submit="executeActiveAction($event)">
+                    <input type="text" class="form-control" placeholder="Search" ng-model="actionSearch" ng-keydown="onActionKeyDown($event)" />
                   </form>
               </div>
             </div>

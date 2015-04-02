@@ -15,6 +15,8 @@ editorApp.controller('PageController', function ($scope, $http, ActionsProvider,
     $scope.allFolders = [];
     $scope.actions = [];
     $scope.terminalOutput = '';
+    $scope.actionSearch = '';
+    $scope.filteredActions = [];
     
     $scope.promptTitle = '';
     $scope.promptMessage = '';
@@ -151,6 +153,10 @@ editorApp.controller('PageController', function ($scope, $http, ActionsProvider,
         if ((e.keyCode == 32 || e.keyCode == 73) && e.ctrlKey) {
             e.preventDefault();
             $scope.actionSearch = '';
+            
+            var filteredActions = $scope.getFilteredActions();
+            _.each(filteredActions, function (action, index) { action.active = (index === 0); });
+            
             $('#actionDialog').modal('show');
             $('#actionDialog .modal-footer input').focus();
         }
@@ -283,13 +289,6 @@ editorApp.controller('PageController', function ($scope, $http, ActionsProvider,
     
     $scope.reopen = function () {
         $scope.loadFile($scope.currentFile);
-    };
-    
-    $scope.executeFirstAction = function (event) {
-        event.preventDefault();
-        
-        $scope.executeAction($scope.filteredActions[0]);
-        $('#actionDialog').modal('hide');
     };
     
     $scope.deleteBackupFiles = function () {
@@ -432,7 +431,43 @@ editorApp.controller('PageController', function ($scope, $http, ActionsProvider,
         });
     };
     
+    $scope.executeActiveAction = function (event) {
+        event.preventDefault();
+        
+        var action = _.findWhere($scope.filteredActions, { active: true });
+        $scope.executeAction(action);
+        $('#actionDialog').modal('hide');
+    };
+    
+    $scope.getFilteredActions = function () {
+        var filteredActions = [];
+        
+        _.each($scope.actions, function (action) {
+            var added = false;
+            _.each(_.keys(action), function (key) {
+                var value = action[key] + '';
+                if ($scope.isActionMatch(value, $scope.actionSearch)) {
+                    if (!added) {
+                        filteredActions.push(action);
+                        added = true;
+                    }
+                }
+            });
+        });
+        
+        return filteredActions;
+    }
+
+    $scope.$watch('actionSearch', function (newValue) {
+        var filteredActions = $scope.getFilteredActions();
+        
+        _.each(filteredActions, function (action, index) { action.active = (index === 0); });
+    });
+    
     $scope.isActionMatch = function (actual, expected) {
+        actual += '';
+        expected += '';
+        
         actual = actual.toLowerCase();
         expected = expected.toLowerCase();
         
@@ -444,6 +479,47 @@ editorApp.controller('PageController', function ($scope, $http, ActionsProvider,
         }
         
         return true;
+    };
+    
+    $scope.onActionKeyDown = function (event) {
+        var filteredActions = $scope.getFilteredActions();
+        var idx;
+        
+        if (event.keyCode == 38) { // Up Arrow Key
+            _.each(filteredActions, function (a, index) {
+                if (a.active) {
+                    idx = index;
+                    a.active = false;
+                }
+            });
+            
+            if (idx > 1) {
+                idx--;
+                filteredActions[idx].active = true;
+            }
+            else {
+                filteredActions[0].active = true;
+            }
+            
+            event.preventDefault();
+        } else if (event.keyCode == 40) { // Down Arrow Key
+            _.each(filteredActions, function (a, index) {
+                if (a.active) {
+                    idx = index;
+                    a.active = false;
+                }
+            });
+            
+            if (idx < filteredActions.length - 1) {
+                idx++;
+                filteredActions[idx].active = true;
+            }
+            else {
+                filteredActions[filteredActions.length - 1].active = true;
+            }
+            
+            event.preventDefault();
+        }
     };
     
     $scope.logout = function () {
