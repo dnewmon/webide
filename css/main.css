@@ -12,8 +12,8 @@ a {
 }
 
 #terminalDialog pre,
-.action-list { 
-    height: 500px;
+.action-list {
+    height: 230px;
     overflow-x: hidden;
     overflow-y: auto;
 }
@@ -24,4 +24,9 @@ a {
 
 #promptDialog .modal-dialog {
     width: 400px;
+}
+
+.list-group-item {
+    padding: 10px 15px;
+    border-top: 0;
 }

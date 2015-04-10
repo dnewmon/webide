@@ -324,9 +324,7 @@ editorApp.controller('PageController', function ($scope, $http, ActionsProvider,
                 var folder = path.lastIndexOf('/');
                 return path.substr(0, folder);
             }));
-            
-            console.log($scope.allFolders);
-            
+
             $scope.files = _.filter($scope.allFiles, function (file) {
                 var extIndex = file.lastIndexOf('.');
                 if (extIndex !== -1) {
@@ -510,16 +508,21 @@ editorApp.controller('PageController', function ($scope, $http, ActionsProvider,
                 }
             });
             
-            if (idx < filteredActions.length - 1) {
+            var maxIndex = Math.min(19, filteredActions.length - 1);
+            
+            if (idx < maxIndex) {
                 idx++;
                 filteredActions[idx].active = true;
             }
             else {
-                filteredActions[filteredActions.length - 1].active = true;
+                filteredActions[maxIndex].active = true;
             }
             
             event.preventDefault();
         }
+        
+        var items = $('#actionDialog .list-group-item');
+        items[idx].scrollIntoView();
     };
     
     $scope.logout = function () {
