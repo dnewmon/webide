@@ -314,7 +314,7 @@ editorApp.controller('PageController', function ($scope, $http, ActionsProvider,
             var binaryFileFormats = [
                 'bak',
                 'png', 'jpg', 'jpeg',
-                'eot', 'woff', 'ttf', 'svg',
+                'eot', 'woff', 'ttf',
                 'class', 'tar', 'jar', 'war'
             ];
             

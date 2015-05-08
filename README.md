@@ -7,7 +7,7 @@ Installation:
 
  * Configure $PROJECT_PATH (each sub-folder will be a separate "project")
  * Configure $WHITELISTED_PATHS to secure access to the system
- * Login using: username / password (api.php:163)
+ * Login using: username / password (api.php:178)
  * Press Control + Space to access nearly all functions of the editor.
  * Press Control + , to access settings of the editor itself.
 
