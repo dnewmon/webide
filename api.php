@@ -175,7 +175,7 @@ class ApiMethods {
             if (isset($input["username"]) &&
                 isset($input["password"]) &&
                 $input["username"] == "username" && 
-                hash("sha256", $input["password"]) == "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8" {
+                hash("sha256", $input["password"]) == "5e884898da28047151d0e56f8dc6292773603d0d6aabbdd62a11ef721d1542d8") {
                     
                 $_SESSION["auth"] = true;
                 echo 'true';
