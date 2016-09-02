@@ -17,12 +17,13 @@ breaks you should be able to fix it and re-save. If you break api.php, run panic
 
 Giving credit where it's due:
 
-# http://php.net/
-# http://ace.c9.io/
-# https://angularjs.org/
-# http://getbootstrap.com/
-# http://jquery.com/
+http://php.net/
 
+http://ace.c9.io/
 
+https://angularjs.org/
 
+http://getbootstrap.com/
+
+http://jquery.com/
 
